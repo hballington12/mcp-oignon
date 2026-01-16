@@ -1,0 +1,56 @@
+task_type: find_paper
+category: finding_papers
+
+paper:
+  openalex_id: W1970754130
+  title: "Single-scattering properties of droxtals"
+  doi: "10.1016/S0022-4073(02)00347-3"
+  year: 2003
+  journal: "Journal of Quantitative Spectroscopy and Radiative Transfer"
+  authors:
+    - "Ping Yang"
+    - "Bryan A. Baum"
+    - "Andrew J. Heymsfield"
+    - "Yongxiang Hu"
+    - "Hung-Lung Huang"
+
+trials:
+  - id: full_title
+    prompt: "Find the paper: Single-scattering properties of droxtals"
+
+  - id: partial_title
+    prompt: "Find the paper: scattering properties droxtals"
+
+  - id: title_typo
+    prompt: "Find the paper: Single-scattering properites of droxtals"
+
+  - id: title_first_author
+    prompt: "Find the paper: Single-scattering properties of droxtals by Yang"
+
+  - id: title_non_first_author
+    prompt: "Find the paper: Single-scattering properties of droxtals by Heymsfield"
+
+  - id: authors_only
+    prompt: "Find the paper by Yang, Baum, and Heymsfield about droxtals"
+
+  - id: doi_https
+    prompt: "Find the paper: https://doi.org/10.1016/S0022-4073(02)00347-3"
+
+  - id: doi_bare
+    prompt: "Find the paper: 10.1016/S0022-4073(02)00347-3"
+
+  - id: openalex_id
+    prompt: "Find the paper: W1970754130"
+
+  - id: partial_title_short
+    prompt: "Find the paper about droxtals and scattering"
+
+  - id: title_year
+    prompt: "Find the 2003 paper: Single-scattering properties of droxtals"
+
+  - id: title_journal
+    prompt: "Find the paper: Single-scattering properties of droxtals, published in JQSRT"
+
+grader:
+  type: code
+  check: paper_id_matches

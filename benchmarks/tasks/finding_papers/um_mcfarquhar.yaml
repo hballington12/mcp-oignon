@@ -1,0 +1,53 @@
+task_type: find_paper
+category: finding_papers
+
+paper:
+  openalex_id: W2149606905
+  title: "Dependence of the single-scattering properties of small ice crystals on idealized shape models"
+  doi: "10.5194/acp-11-3159-2011"
+  year: 2011
+  journal: "Atmospheric Chemistry and Physics"
+  authors:
+    - "Junshik Um"
+    - "Greg M. McFarquhar"
+
+trials:
+  - id: full_title
+    prompt: "Find the paper: Dependence of the single-scattering properties of small ice crystals on idealized shape models"
+
+  - id: partial_title
+    prompt: "Find the paper: single-scattering properties ice crystals shape models"
+
+  - id: title_typo
+    prompt: "Find the paper: Dependance of the single-scattering properties of small ice crystals on idealized shape models"
+
+  - id: title_first_author
+    prompt: "Find the paper: Dependence of the single-scattering properties of small ice crystals by Um"
+
+  - id: title_non_first_author
+    prompt: "Find the paper: Dependence of the single-scattering properties of small ice crystals by McFarquhar"
+
+  - id: authors_only
+    prompt: "Find the paper by Um and McFarquhar about ice crystal scattering"
+
+  - id: doi_https
+    prompt: "Find the paper: https://doi.org/10.5194/acp-11-3159-2011"
+
+  - id: doi_bare
+    prompt: "Find the paper: 10.5194/acp-11-3159-2011"
+
+  - id: openalex_id
+    prompt: "Find the paper: W2149606905"
+
+  - id: partial_title_short
+    prompt: "Find the paper about ice crystal shape and scattering"
+
+  - id: title_year
+    prompt: "Find the 2011 paper: Dependence of the single-scattering properties of small ice crystals on idealized shape models"
+
+  - id: title_journal
+    prompt: "Find the paper: Dependence of the single-scattering properties of small ice crystals, published in ACP"
+
+grader:
+  type: code
+  check: paper_id_matches

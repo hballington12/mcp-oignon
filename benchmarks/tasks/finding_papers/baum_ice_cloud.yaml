@@ -1,0 +1,56 @@
+task_type: find_paper
+category: finding_papers
+
+paper:
+  openalex_id: W2053947701
+  title: "Ice cloud single-scattering property models with the full phase matrix at wavelengths from 0.2 to 100 um"
+  doi: "10.1016/j.jqsrt.2014.02.029"
+  year: 2014
+  journal: "Journal of Quantitative Spectroscopy and Radiative Transfer"
+  authors:
+    - "Bryan A. Baum"
+    - "Ping Yang"
+    - "Andrew J. Heymsfield"
+    - "Aaron Bansemer"
+    - "Benjamin Cole"
+
+trials:
+  - id: full_title
+    prompt: "Find the paper: Ice cloud single-scattering property models with the full phase matrix at wavelengths from 0.2 to 100 um"
+
+  - id: partial_title
+    prompt: "Find the paper: ice cloud single-scattering phase matrix"
+
+  - id: title_typo
+    prompt: "Find the paper: Ice cloud single-scatering property models with the full phase matrix"
+
+  - id: title_first_author
+    prompt: "Find the paper: Ice cloud single-scattering property models by Baum"
+
+  - id: title_non_first_author
+    prompt: "Find the paper: Ice cloud single-scattering property models by Heymsfield"
+
+  - id: authors_only
+    prompt: "Find the paper by Baum, Yang, and Heymsfield about ice cloud scattering"
+
+  - id: doi_https
+    prompt: "Find the paper: https://doi.org/10.1016/j.jqsrt.2014.02.029"
+
+  - id: doi_bare
+    prompt: "Find the paper: 10.1016/j.jqsrt.2014.02.029"
+
+  - id: openalex_id
+    prompt: "Find the paper: W2053947701"
+
+  - id: partial_title_short
+    prompt: "Find the paper about ice cloud phase matrix models"
+
+  - id: title_year
+    prompt: "Find the 2014 paper: Ice cloud single-scattering property models"
+
+  - id: title_journal
+    prompt: "Find the paper: Ice cloud single-scattering property models with the full phase matrix, published in JQSRT"
+
+grader:
+  type: code
+  check: paper_id_matches

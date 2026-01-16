@@ -1,0 +1,56 @@
+task_type: find_paper
+category: finding_papers
+
+paper:
+  openalex_id: W4223997122
+  title: "Analytical Prediction of Scattering Properties of Spheroidal Dust Particles With Machine Learning"
+  doi: "10.1029/2021GL097548"
+  year: 2022
+  journal: "Geophysical Research Letters"
+  authors:
+    - "Xi Chen"
+    - "Jun Wang"
+    - "Joe Gomes"
+    - "Oleg Dubovik"
+    - "Ping Yang"
+
+trials:
+  - id: full_title
+    prompt: "Find the paper: Analytical Prediction of Scattering Properties of Spheroidal Dust Particles With Machine Learning"
+
+  - id: partial_title
+    prompt: "Find the paper: scattering properties spheroidal dust machine learning"
+
+  - id: title_typo
+    prompt: "Find the paper: Analytical Prediction of Scatering Properties of Spheroidal Dust Particles With Machine Learning"
+
+  - id: title_first_author
+    prompt: "Find the paper: Analytical Prediction of Scattering Properties of Spheroidal Dust Particles by Chen"
+
+  - id: title_non_first_author
+    prompt: "Find the paper: Analytical Prediction of Scattering Properties of Spheroidal Dust Particles by Dubovik"
+
+  - id: authors_only
+    prompt: "Find the paper by Chen, Wang, and Dubovik about dust particle scattering"
+
+  - id: doi_https
+    prompt: "Find the paper: https://doi.org/10.1029/2021GL097548"
+
+  - id: doi_bare
+    prompt: "Find the paper: 10.1029/2021GL097548"
+
+  - id: openalex_id
+    prompt: "Find the paper: W4223997122"
+
+  - id: partial_title_short
+    prompt: "Find the paper about dust scattering and machine learning"
+
+  - id: title_year
+    prompt: "Find the 2022 paper: Analytical Prediction of Scattering Properties of Spheroidal Dust Particles"
+
+  - id: title_journal
+    prompt: "Find the paper: Analytical Prediction of Scattering Properties of Spheroidal Dust Particles, published in GRL"
+
+grader:
+  type: code
+  check: paper_id_matches

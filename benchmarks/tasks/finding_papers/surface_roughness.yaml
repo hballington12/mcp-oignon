@@ -1,0 +1,53 @@
+task_type: find_paper
+category: finding_papers
+
+paper:
+  openalex_id: W4397292030
+  title: "A light scattering model for large particles with surface roughness"
+  doi: "10.1016/j.jqsrt.2024.109054"
+  year: 2024
+  journal: "Journal of Quantitative Spectroscopy and Radiative Transfer"
+  authors:
+    - "Harry Ballington"
+    - "E. Hesse"
+
+trials:
+  - id: full_title
+    prompt: "Find the paper: A light scattering model for large particles with surface roughness"
+
+  - id: partial_title
+    prompt: "Find the paper: light scattering large particles roughness"
+
+  - id: title_typo
+    prompt: "Find the paper: A light scatering model for large particles with surface roughness"
+
+  - id: title_first_author
+    prompt: "Find the paper: A light scattering model for large particles with surface roughness by Ballington"
+
+  - id: title_non_first_author
+    prompt: "Find the paper: A light scattering model for large particles with surface roughness by Hesse"
+
+  - id: authors_only
+    prompt: "Find the paper by Ballington and Hesse about light scattering and surface roughness"
+
+  - id: doi_https
+    prompt: "Find the paper: https://doi.org/10.1016/j.jqsrt.2024.109054"
+
+  - id: doi_bare
+    prompt: "Find the paper: 10.1016/j.jqsrt.2024.109054"
+
+  - id: openalex_id
+    prompt: "Find the paper: W4397292030"
+
+  - id: partial_title_short
+    prompt: "Find the paper about surface roughness and light scattering"
+
+  - id: title_year
+    prompt: "Find the 2024 paper: A light scattering model for large particles with surface roughness"
+
+  - id: title_journal
+    prompt: "Find the paper: A light scattering model for large particles with surface roughness, published in JQSRT"
+
+grader:
+  type: code
+  check: paper_id_matches

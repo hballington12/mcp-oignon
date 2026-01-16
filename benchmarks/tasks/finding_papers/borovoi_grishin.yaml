@@ -1,0 +1,47 @@
+task_type: find_paper
+category: finding_papers
+
+paper:
+  openalex_id: W1969120882
+  title: "Scattering matrices for large ice crystal particles"
+  doi: null
+  year: 2003
+  journal: "Journal of Quantitative Spectroscopy and Radiative Transfer"
+  authors:
+    - "Anatoli G. Borovoi"
+    - "Igor A. Grishin"
+
+trials:
+  - id: full_title
+    prompt: "Find the paper: Scattering matrices for large ice crystal particles"
+
+  - id: partial_title
+    prompt: "Find the paper: scattering matrices ice crystal"
+
+  - id: title_typo
+    prompt: "Find the paper: Scattering matricies for large ice crystal particles"
+
+  - id: title_first_author
+    prompt: "Find the paper: Scattering matrices for large ice crystal particles by Borovoi"
+
+  - id: title_non_first_author
+    prompt: "Find the paper: Scattering matrices for large ice crystal particles by Grishin"
+
+  - id: authors_only
+    prompt: "Find the paper by Borovoi and Grishin about scattering matrices"
+
+  - id: openalex_id
+    prompt: "Find the paper: W1969120882"
+
+  - id: partial_title_short
+    prompt: "Find the paper about ice crystal scattering matrices"
+
+  - id: title_year
+    prompt: "Find the 2003 paper: Scattering matrices for large ice crystal particles"
+
+  - id: title_journal
+    prompt: "Find the paper: Scattering matrices for large ice crystal particles, published in JQSRT"
+
+grader:
+  type: code
+  check: paper_id_matches
