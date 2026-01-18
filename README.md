@@ -20,3 +20,5 @@ Config file locations:
 - Claude Desktop (macOS): `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Claude Desktop (Windows): `%APPDATA%\Claude\claude_desktop_config.json`
 - Claude Desktop (Linux): `~/.config/Claude/claude_desktop_config.json`
+- ChatGPT Desktop (macOS): `~/Library/Application Support/com.openai.chat/mcp.json`
+- ChatGPT Desktop (Windows): `%APPDATA%\com.openai.chat\mcp.json`
