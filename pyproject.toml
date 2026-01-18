@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-oignon"
-version = "0.1.0"
+version = "0.1.2"
 description = "A lightweight, hand-crafted MCP server for exploring related literature and research"
 readme = "README.md"
 license = "MIT"
@@ -38,10 +38,12 @@ dependencies = [
     "mcp[cli]>=1.0.0",
     "pyalex>=0.15",
     "click>=8.0",
-    "claude-agent-sdk>=0.1.19",
 ]
 
 [project.optional-dependencies]
+bench = [
+    "claude-agent-sdk>=0.1.19",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.7",
