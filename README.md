@@ -4,8 +4,9 @@ A lightweight MCP server for exploring academic literature and building citation
 
 Install with `pip install mcp-oignon` or `uv pip install mcp-oignon`
 
-Add to your MCP client config:
+Add to your MCP client config.
 
+For Claude Desktop, ChatGPT Desktop, Gemini CLI (JSON):
 ```json
 {
   "mcpServers": {
@@ -16,9 +17,17 @@ Add to your MCP client config:
 }
 ```
 
+For Codex CLI (TOML):
+```toml
+[mcp_servers.oignon]
+command = "mcp-oignon"
+```
+
 Config file locations:
 - Claude Desktop (macOS): `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Claude Desktop (Windows): `%APPDATA%\Claude\claude_desktop_config.json`
 - Claude Desktop (Linux): `~/.config/Claude/claude_desktop_config.json`
 - ChatGPT Desktop (macOS): `~/Library/Application Support/com.openai.chat/mcp.json`
 - ChatGPT Desktop (Windows): `%APPDATA%\com.openai.chat\mcp.json`
+- Gemini CLI: `~/.gemini/settings.json`
+- Codex CLI: `~/.codex/config.toml`
