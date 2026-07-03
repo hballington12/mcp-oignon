@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11"
 
 [[package]]
@@ -420,16 +420,18 @@ cli = [
 
 [[package]]
 name = "mcp-oignon"
-version = "0.1.0"
+version = "0.1.3"
 source = { editable = "." }
 dependencies = [
-    { name = "claude-agent-sdk" },
     { name = "click" },
     { name = "mcp", extra = ["cli"] },
     { name = "pyalex" },
 ]
 
 [package.optional-dependencies]
+bench = [
+    { name = "claude-agent-sdk" },
+]
 dev = [
     { name = "pyright" },
     { name = "pytest" },
@@ -443,7 +445,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "claude-agent-sdk", specifier = ">=0.1.19" },
+    { name = "claude-agent-sdk", marker = "extra == 'bench'", specifier = ">=0.1.19" },
     { name = "click", specifier = ">=8.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.0.0" },
     { name = "pyalex", specifier = ">=0.15" },
@@ -451,7 +453,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["bench", "dev"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9.0.2" }]

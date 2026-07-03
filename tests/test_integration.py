@@ -305,7 +305,7 @@ class TestMCPTools:
     @pytest.fixture(scope="class")
     def built_graph(self):
         """Build graph via the tool interface."""
-        from oignon.server import build_citation_graph, get_store
+        from oignon.server import build_citation_graph
 
         import asyncio
 

@@ -30,8 +30,11 @@ Data flows in one direction: OpenAlex API -> graph builder -> in-memory store ->
   - ROOTS (historical lineage): root_seeds = the source's references; root_papers = references of those seeds. Ranked by citedCount + coCitedCount + coCitingCount relative to the seeds.
   - BRANCHES (future influence): branch_seeds = papers citing the source (must be published >= source year + 1, citations > 0); branch_papers = references of branch seeds, pre-filtered to those referenced by >= 2 seeds. Ranked with a recency-weighted co-citation score.
   - Top N of each are fetched with full metadata and wired into edges.
-- `src/oignon/storage/memory.py` — `GraphStore`, a module-level singleton holding exactly one loaded graph at a time. Papers become `Entity` objects whose metadata is flattened into searchable "observation" strings (`"Title: ..."`, `"Year: ..."`, `"Graph role: ..."`, abstract sentences). Search is substring matching over these observations; consumers parse fields back out by prefix.
-- `src/oignon/server.py` — FastMCP tool definitions (`search_paper`, `get_paper`, `build_citation_graph`, `search_graph`, `get_graph_node`, `get_citations`, `get_graph_stats`, `get_all_papers`). Graph-query tools error until `build_citation_graph` has loaded the store.
+- `src/oignon/core/paper_search.py` — multi-strategy OpenAlex search: parallel strategies (relevance, title.search, raw_author_name.search) fused with reciprocal rank fusion, plus fuzzy title/author boosts and direct DOI/OpenAlex-ID detection.
+- `src/oignon/storage/memory.py` — `GraphStore`, one loaded graph. Papers become `Entity` objects whose metadata is flattened into searchable "observation" strings (built in `storage/observations.py`), plus a `_meta` side-table (title/year/role/citations/topic) for fast result formatting.
+- `src/oignon/storage/registry.py` — `GraphRegistry`, the module-level singleton (`get_registry()`). Holds multiple `GraphStore`s keyed by source paper ID; the newest build is "active" and is the default target for graph queries. `search_all()` merges search across graphs.
+- `src/oignon/storage/search.py` — field-weighted BM25 index (title/keywords/topic > abstract) used by `GraphStore.search`, with phrase boost and matched-snippet extraction; substring matching remains as a fallback for IDs.
+- `src/oignon/server.py` — FastMCP tool definitions (`search_paper`, `get_paper`, `build_citation_graph`, `search_graph`, `list_graphs`, `get_graph_node`, `get_citations`, `get_graph_stats`, `get_all_papers`). Graph-query tools take an optional `graph_id` (default: active graph; `search_graph` accepts `"all"`) and error until `build_citation_graph` has loaded a graph.
 - `src/oignon/tools.py` — tool metadata (descriptions, JSON schemas) as the single source of truth shared by both the MCP server and the benchmark harness. Tool descriptions are themselves benchmarked, so edit them here.
 - `src/oignon/cli.py` — `mcp-oignon` entry point.
 
@@ -42,4 +45,4 @@ Data flows in one direction: OpenAlex API -> graph builder -> in-memory store ->
 - `harness.py` wraps the server's tool implementations into an SDK MCP server using metadata from `oignon/tools.py`.
 - Tasks are YAML files under `benchmarks/tasks/<category>/` with prompts and ground truth; `graders.py` scores results.
 - Results are written to `benchmarks/results/` as timestamped JSON.
-- Call `reset_graph_store()` between trials since the store is a global singleton.
+- Call `reset_graph_store()` between trials since the graph registry is a global singleton.

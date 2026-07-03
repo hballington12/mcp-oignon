@@ -47,6 +47,9 @@ log/
 # Secrets
 .env
 
+# Scratch scripts
+tmp/
+
 # OS
 .DS_Store
 Thumbs.db

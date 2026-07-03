@@ -4,7 +4,6 @@ This module wraps oignon's tools for use with the Claude agent SDK,
 using tool definitions from oignon/tools.py as the single source of truth.
 """
 
-import asyncio
 from dataclasses import dataclass
 from typing import Any
 
@@ -28,6 +27,7 @@ from oignon.server import (
     get_graph_node as _get_graph_node,
     get_graph_stats as _get_graph_stats,
     get_paper as _get_paper,
+    list_graphs as _list_graphs,
     search_graph as _search_graph,
     search_paper as _search_paper,
 )
@@ -40,10 +40,14 @@ from oignon.server import (
 @tool(
     "search_paper",
     TOOLS["search_paper"]["description"],
-    {"query": str},
+    {"query": str, "author": str, "year": str},
 )
 async def search_paper(args: dict[str, Any]) -> dict[str, Any]:
-    result = await _search_paper(args["query"])
+    result = await _search_paper(
+        args.get("query", ""),
+        args.get("author", ""),
+        args.get("year", ""),
+    )
     return {"content": [{"type": "text", "text": result}]}
 
 
@@ -74,32 +78,48 @@ async def build_citation_graph(args: dict[str, Any]) -> dict[str, Any]:
 @tool(
     "search_graph",
     TOOLS["search_graph"]["description"],
-    {"query": str},
+    {"query": str, "limit": int, "role": str, "graph_id": str},
 )
 async def search_graph(args: dict[str, Any]) -> dict[str, Any]:
-    result = await _search_graph(args["query"])
+    result = await _search_graph(
+        args["query"],
+        args.get("limit", 15),
+        args.get("role", ""),
+        args.get("graph_id", ""),
+    )
+    return {"content": [{"type": "text", "text": result}]}
+
+
+@tool(
+    "list_graphs",
+    TOOLS["list_graphs"]["description"],
+    {},
+)
+async def list_graphs(args: dict[str, Any]) -> dict[str, Any]:
+    result = await _list_graphs()
     return {"content": [{"type": "text", "text": result}]}
 
 
 @tool(
     "get_graph_node",
     TOOLS["get_graph_node"]["description"],
-    {"paper_id": str},
+    {"paper_id": str, "graph_id": str},
 )
 async def get_graph_node(args: dict[str, Any]) -> dict[str, Any]:
-    result = await _get_graph_node(args["paper_id"])
+    result = await _get_graph_node(args["paper_id"], args.get("graph_id", ""))
     return {"content": [{"type": "text", "text": result}]}
 
 
 @tool(
     "get_citations",
     TOOLS["get_citations"]["description"],
-    {"paper_id": str, "direction": str},
+    {"paper_id": str, "direction": str, "graph_id": str},
 )
 async def get_citations(args: dict[str, Any]) -> dict[str, Any]:
     result = await _get_citations(
         args["paper_id"],
         args.get("direction", "cited_by"),
+        args.get("graph_id", ""),
     )
     return {"content": [{"type": "text", "text": result}]}
 
@@ -107,20 +127,20 @@ async def get_citations(args: dict[str, Any]) -> dict[str, Any]:
 @tool(
     "get_graph_stats",
     TOOLS["get_graph_stats"]["description"],
-    {},
+    {"graph_id": str},
 )
 async def get_graph_stats(args: dict[str, Any]) -> dict[str, Any]:
-    result = await _get_graph_stats()
+    result = await _get_graph_stats(args.get("graph_id", ""))
     return {"content": [{"type": "text", "text": result}]}
 
 
 @tool(
     "get_all_papers",
     TOOLS["get_all_papers"]["description"],
-    {"sort_by": str},
+    {"sort_by": str, "graph_id": str},
 )
 async def get_all_papers(args: dict[str, Any]) -> dict[str, Any]:
-    result = await _get_all_papers(args.get("sort_by", "year"))
+    result = await _get_all_papers(args.get("sort_by", "year"), args.get("graph_id", ""))
     return {"content": [{"type": "text", "text": result}]}
 
 
@@ -133,6 +153,7 @@ OIGNON_SERVER = create_sdk_mcp_server(
         get_paper,
         build_citation_graph,
         search_graph,
+        list_graphs,
         get_graph_node,
         get_citations,
         get_graph_stats,
@@ -146,6 +167,7 @@ ALLOWED_TOOLS = [
     "mcp__oignon__get_paper",
     "mcp__oignon__build_citation_graph",
     "mcp__oignon__search_graph",
+    "mcp__oignon__list_graphs",
     "mcp__oignon__get_graph_node",
     "mcp__oignon__get_citations",
     "mcp__oignon__get_graph_stats",
@@ -175,13 +197,10 @@ class TaskResult:
 
 
 def reset_graph_store():
-    """Reset the graph store between tasks."""
-    from oignon.storage.memory import get_store
+    """Reset all loaded graphs between tasks."""
+    from oignon.storage.registry import get_registry
 
-    store = get_store()
-    store._entities = {}
-    store._relations = []
-    store._source_id = None
+    get_registry().clear()
 
 
 async def run_task(

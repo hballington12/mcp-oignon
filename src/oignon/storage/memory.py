@@ -1,9 +1,10 @@
 """In-memory graph storage and search."""
 
-import re
 from dataclasses import dataclass
 
 from oignon.core.graph import FullPaper, Graph
+from oignon.storage.observations import build_index_fields, build_observations
+from oignon.storage.search import SearchIndex, pick_snippets
 
 
 @dataclass
@@ -31,12 +32,16 @@ class GraphStore:
         self._entities: dict[str, Entity] = {}
         self._relations: list[Relation] = []
         self._source_id: str | None = None
+        self._index = SearchIndex()
+        self._meta: dict[str, dict] = {}
 
     def clear(self) -> None:
         """Clear all stored data."""
         self._entities.clear()
         self._relations.clear()
         self._source_id = None
+        self._index.clear()
+        self._meta.clear()
 
     def is_loaded(self) -> bool:
         """Check if a graph is loaded."""
@@ -65,12 +70,57 @@ class GraphStore:
 
         return self._build_summary(graph)
 
-    def search(self, query: str, limit: int = 15) -> list[dict]:
-        """Search entities by query string."""
+    def search(
+        self, query: str, limit: int = 15, role: str | None = None
+    ) -> list[dict]:
+        """Ranked search over the loaded graph.
+
+        BM25 over titles, keywords, topics, authors, venues, and abstract
+        text, with a boost when the exact phrase appears verbatim. Falls
+        back to substring matching (IDs, exact strings) when BM25 finds
+        nothing.
+        """
+        hits = self._index.search(query, limit=max(limit * 3, 30))
+
+        phrase = query.lower().strip()
+        is_phrase = " " in phrase
+
+        results = []
+        for entity_id, score in hits:
+            entity = self._entities.get(entity_id)
+            if not entity:
+                continue
+
+            meta = self._meta.get(entity_id, {})
+            if role and meta.get("role") != role:
+                continue
+
+            if is_phrase and any(phrase in obs.lower() for obs in entity.observations):
+                score *= 1.3
+
+            result = self._entity_to_result(entity)
+            result["score"] = round(score, 2)
+            result["citations"] = meta.get("citations")
+            result["topic"] = meta.get("topic")
+            result["matched"] = pick_snippets(entity.observations, query)
+            results.append(result)
+
+        results.sort(key=lambda r: r["score"], reverse=True)
+        if results:
+            return results[:limit]
+
+        return self._substring_search(query, limit, role)
+
+    def _substring_search(
+        self, query: str, limit: int, role: str | None = None
+    ) -> list[dict]:
+        """Literal substring fallback (catches IDs and exact strings)."""
         query_lower = query.lower()
         matches = []
 
         for entity in self._entities.values():
+            if role and self._meta.get(entity.name, {}).get("role") != role:
+                continue
             if self._matches(entity, query_lower):
                 matches.append(self._entity_to_result(entity))
                 if len(matches) >= limit:
@@ -81,6 +131,43 @@ class GraphStore:
     def get_entity(self, entity_id: str) -> Entity | None:
         """Get entity by ID."""
         return self._entities.get(entity_id)
+
+    @property
+    def entity_count(self) -> int:
+        return len(self._entities)
+
+    @property
+    def relation_count(self) -> int:
+        return len(self._relations)
+
+    @property
+    def source_id(self) -> str | None:
+        return self._source_id
+
+    def paper_summary(self, paper_id: str) -> dict | None:
+        """Basic metadata for one paper (title, year, role, citations, topic)."""
+        meta = self._meta.get(paper_id)
+        if not meta:
+            return None
+        return {"id": paper_id, **meta}
+
+    def list_papers(self, sort_by: str = "year") -> list[dict]:
+        """All papers with basic metadata, sorted by year or role."""
+        papers = [{"id": pid, **meta} for pid, meta in self._meta.items()]
+
+        if sort_by == "year":
+            papers.sort(key=lambda p: p["year"], reverse=True)
+        elif sort_by == "role":
+            role_order = {
+                "source": 0,
+                "root": 1,
+                "root_seed": 2,
+                "branch": 3,
+                "branch_seed": 4,
+            }
+            papers.sort(key=lambda p: role_order.get(p["role"], 99))
+
+        return papers
 
     def get_citations(self, paper_id: str, direction: str) -> list[str]:
         """Get papers citing or cited by a paper."""
@@ -107,86 +194,43 @@ class GraphStore:
                     role = obs.replace("Graph role: ", "")
                     roles[role] = roles.get(role, 0) + 1
 
+        topics: dict[str, int] = {}
+        for meta in self._meta.values():
+            topic = meta.get("topic")
+            if topic:
+                topics[topic] = topics.get(topic, 0) + 1
+
         return {
             "entities": len(self._entities),
             "relations": len(self._relations),
             "by_year": dict(sorted(years.items(), reverse=True)),
             "by_role": roles,
+            "by_topic": dict(
+                sorted(topics.items(), key=lambda x: x[1], reverse=True)
+            ),
         }
 
     def _add_paper(self, paper: FullPaper, role: str) -> None:
-        """Convert paper to entity and store."""
+        """Convert paper to entity, store, and index it."""
         if paper.id in self._entities:
             return
-
-        observations = []
-
-        # Core metadata
-        observations.append(f"Title: {paper.title}")
-        observations.append(f"Year: {paper.year}")
-
-        if paper.authors:
-            author_names = [a.name for a in paper.authors[:5]]
-            if len(paper.authors) > 5:
-                author_names.append("et al.")
-            observations.append(f"Authors: {', '.join(author_names)}")
-
-        observations.append(f"Citations: {paper.citation_count}")
-        observations.append(f"References: {paper.references_count}")
-
-        if paper.doi:
-            observations.append(f"DOI: {paper.doi}")
-
-        observations.append(f"Graph role: {role}")
-
-        if paper.source_name:
-            observations.append(f"Published in: {paper.source_name}")
-
-        if paper.open_access is not None:
-            observations.append(f"Open access: {'yes' if paper.open_access else 'no'}")
-
-        if paper.fwci:
-            observations.append(f"Field-weighted citation impact: {paper.fwci:.2f}")
-
-        if paper.citation_percentile:
-            cp = paper.citation_percentile
-            if cp.is_in_top_1_percent:
-                observations.append("Highly cited: top 1% in field")
-            elif cp.is_in_top_10_percent:
-                observations.append("Highly cited: top 10% in field")
-
-        if paper.primary_topic:
-            topic = paper.primary_topic
-            observations.append(f"Topic: {topic.name}")
-            if topic.field:
-                observations.append(f"Field: {topic.field.get('name', '')}")
-            if topic.domain:
-                observations.append(f"Domain: {topic.domain.get('name', '')}")
-
-        if paper.keywords:
-            observations.append(f"Keywords: {', '.join(paper.keywords[:10])}")
-
-        if paper.sdgs:
-            sdg_names = [s.name for s in paper.sdgs[:3]]
-            observations.append(f"SDGs: {', '.join(sdg_names)}")
-
-        # Abstract sentences
-        if paper.abstract:
-            sentences = self._split_abstract(paper.abstract)
-            observations.extend(sentences)
 
         entity = Entity(
             name=paper.id,
             entity_type=paper.type or "article",
-            observations=observations,
+            observations=build_observations(paper, role),
         )
         self._entities[paper.id] = entity
 
-    def _split_abstract(self, abstract: str, max_sentences: int = 10) -> list[str]:
-        """Split abstract into sentences."""
-        sentences = re.split(r"(?<=[.!?])\s+", abstract.strip())
-        sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
-        return sentences[:max_sentences]
+        self._index.add(paper.id, build_index_fields(paper, role))
+
+        self._meta[paper.id] = {
+            "title": paper.title,
+            "year": paper.year,
+            "role": role,
+            "citations": paper.citation_count,
+            "topic": paper.primary_topic.name if paper.primary_topic else None,
+        }
 
     def _matches(self, entity: Entity, query: str) -> bool:
         """Check if entity matches search query."""
@@ -201,24 +245,13 @@ class GraphStore:
 
     def _entity_to_result(self, entity: Entity) -> dict:
         """Convert entity to search result dict."""
-        title = ""
-        year = ""
-        role = ""
-
-        for obs in entity.observations:
-            if obs.startswith("Title: "):
-                title = obs.replace("Title: ", "")
-            elif obs.startswith("Year: "):
-                year = obs.replace("Year: ", "")
-            elif obs.startswith("Graph role: "):
-                role = obs.replace("Graph role: ", "")
-
+        meta = self._meta.get(entity.name, {})
         return {
             "id": entity.name,
             "type": entity.entity_type,
-            "title": title,
-            "year": year,
-            "role": role,
+            "title": meta.get("title", ""),
+            "year": meta.get("year", ""),
+            "role": meta.get("role", ""),
         }
 
     def _build_summary(self, graph: Graph) -> dict:
@@ -260,12 +293,3 @@ class GraphStore:
                 "api_calls": graph.metadata.api_calls,
             },
         }
-
-
-# Module-level singleton for the MCP server
-_store = GraphStore()
-
-
-def get_store() -> GraphStore:
-    """Get the global graph store instance."""
-    return _store

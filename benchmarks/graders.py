@@ -4,11 +4,10 @@ Graders evaluate agent performance by checking transcripts and tool outputs.
 """
 
 import json
-import re
 from dataclasses import dataclass
 from typing import Any
 
-from benchmarks.harness import TaskResult, ToolCall
+from benchmarks.harness import TaskResult
 
 
 @dataclass
