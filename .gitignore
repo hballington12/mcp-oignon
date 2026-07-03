@@ -40,8 +40,12 @@ htmlcov/
 benchmarks/results/
 
 # Logs
+log
 log/
 *.log
+
+# Secrets
+.env
 
 # OS
 .DS_Store
