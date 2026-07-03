@@ -11,11 +11,15 @@ For Claude Desktop, ChatGPT Desktop, Gemini CLI (JSON):
 {
   "mcpServers": {
     "oignon": {
-      "command": "mcp-oignon"
+      "command": "mcp-oignon",
+      "env": { "OPENALEX_EMAIL": "you@example.com" }
     }
   }
 }
 ```
+
+Setting `OPENALEX_EMAIL` is optional but recommended: it puts requests in
+the OpenAlex polite pool, which has more reliable rate limits.
 
 For Codex CLI (TOML):
 ```toml

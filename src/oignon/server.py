@@ -7,6 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from oignon.core.builder import build_graph
 from oignon.core.openalex import fetch_paper
 from oignon.core.paper_search import find_papers
+from oignon.core.ratelimit import OpenAlexRateLimitError
 from oignon.storage.registry import get_registry
 
 mcp = FastMCP("oignon")
@@ -42,7 +43,10 @@ async def search_paper(query: str = "", author: str = "", year: str = "") -> str
     if not query.strip() and not author.strip():
         return json.dumps({"error": "Provide a query and/or an author."})
 
-    results = find_papers(query=query, author=author, year=year, limit=10)
+    try:
+        results = find_papers(query=query, author=author, year=year, limit=10)
+    except OpenAlexRateLimitError as e:
+        return json.dumps({"error": str(e)})
 
     return json.dumps(results, indent=2)
 
@@ -57,7 +61,10 @@ async def get_paper(work_id: str) -> str:
     Returns:
         Paper details including title, authors, year, citations
     """
-    paper = fetch_paper(work_id)
+    try:
+        paper = fetch_paper(work_id)
+    except OpenAlexRateLimitError as e:
+        return json.dumps({"error": str(e)})
 
     if not paper:
         return json.dumps({"error": f"Could not fetch paper: {work_id}"})
@@ -100,7 +107,10 @@ async def build_citation_graph(
     Returns:
         Summary of the built graph, including its graph_id
     """
-    graph = build_graph(source_id, n_roots=n_roots, n_branches=n_branches)
+    try:
+        graph = build_graph(source_id, n_roots=n_roots, n_branches=n_branches)
+    except OpenAlexRateLimitError as e:
+        return json.dumps({"error": str(e)})
 
     graph_id, summary, replaced = get_registry().load(graph)
 

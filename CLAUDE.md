@@ -24,7 +24,8 @@ Set `OPENALEX_EMAIL` to join the OpenAlex polite pool (read in `core/openalex.py
 
 Data flows in one direction: OpenAlex API -> graph builder -> in-memory store -> MCP tools.
 
-- `src/oignon/core/openalex.py` — pyalex client. Two fetch tiers: "slim" (id, year, citations, references; used for ranking thousands of candidates cheaply) and "full" (complete metadata; only for papers that make the final graph). Batches IDs (100 per filter) and fetches batches in parallel threads. Fetch errors are swallowed and return empty results.
+- `src/oignon/core/openalex.py` — pyalex client. Two fetch tiers: "slim" (id, year, citations, references; used for ranking thousands of candidates cheaply) and "full" (complete metadata; only for papers that make the final graph). Batches IDs (100 per filter) and fetches batches in parallel threads. Non-429 fetch errors are swallowed and return empty results; 429s raise `OpenAlexRateLimitError`. Work-dict-to-dataclass conversion lives in `core/formats.py`.
+- `src/oignon/core/ratelimit.py` — global client-side throttle (6 req/s token bucket shared across threads) called before every API request, plus 429 detection. pyalex `max_retries` must stay 0: with any nonzero value urllib3 honors OpenAlex's Retry-After header on 429 with an uncapped sleep and tool calls hang for minutes. Note OpenAlex rate-limits DOI-form lookups (`/works/https://doi.org/...`) separately from W-id lookups.
 - `src/oignon/core/graph.py` — dataclasses: `SlimPaper`, `FullPaper`, `Graph`, `GraphMetadata`, etc.
 - `src/oignon/core/builder.py` — the core algorithm. Builds a "Local Citation Network" around a source paper with two halves:
   - ROOTS (historical lineage): root_seeds = the source's references; root_papers = references of those seeds. Ranked by citedCount + coCitedCount + coCitingCount relative to the seeds.

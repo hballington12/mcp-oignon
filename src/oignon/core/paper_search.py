@@ -13,11 +13,13 @@ from difflib import SequenceMatcher
 
 from pyalex import Works
 
+from oignon.core.formats import format_full_paper
 from oignon.core.graph import FullPaper
-from oignon.core.openalex import (
-    FULL_FIELDS,
-    fetch_paper,
-    format_full_paper,
+from oignon.core.openalex import FULL_FIELDS, fetch_paper
+from oignon.core.ratelimit import (
+    OpenAlexRateLimitError,
+    is_rate_limit,
+    throttle,
 )
 
 RESULTS_PER_STRATEGY = 25
@@ -100,11 +102,14 @@ def _apply_year(works: Works, year: str) -> Works:
 
 
 def _run_strategy(build_query) -> list[FullPaper]:
-    """Execute one search strategy, returning [] on any API error."""
+    """Execute one search strategy, returning [] on any non-429 API error."""
+    throttle()
     try:
         results = build_query().select(FULL_FIELDS).get(per_page=RESULTS_PER_STRATEGY)
         return [format_full_paper(w) for w in results]
-    except Exception:
+    except Exception as e:
+        if is_rate_limit(e):
+            raise OpenAlexRateLimitError() from e
         return []
 
 
@@ -160,7 +165,16 @@ def find_papers(
             name: executor.submit(_run_strategy, thunk)
             for name, thunk in strategies.items()
         }
-        ranked_lists = {name: f.result() for name, f in futures.items()}
+        # Tolerate partial rate limiting; fail only if no strategy got through
+        ranked_lists = {}
+        rate_limited = 0
+        for name, future in futures.items():
+            try:
+                ranked_lists[name] = future.result()
+            except OpenAlexRateLimitError:
+                rate_limited += 1
+        if rate_limited and not any(ranked_lists.values()):
+            raise OpenAlexRateLimitError()
 
     # Reciprocal rank fusion across strategies
     papers: dict[str, FullPaper] = {}

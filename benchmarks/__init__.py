@@ -1,5 +1,7 @@
 """Oignon benchmark suite."""
 
+import benchmarks._env  # noqa: F401  # loads .env before oignon imports
+
 from benchmarks.harness import (
     TaskResult,
     ToolCall,
